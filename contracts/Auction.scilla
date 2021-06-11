@@ -1,0 +1,230 @@
+scilla_version 0
+
+import ListUtils IntUtils
+
+library AuctionLib
+
+type State =
+  |Running of String
+  |Finalized of String
+
+type Auction =
+  | Auction of Uint32 ByStr20 Uint32 Uint128 Uint64 Uint64 ByStr20 Uint128 ByStr20 State
+
+let runningState = "Running"
+let finalizedState = "Finalized"
+
+let zero128 = Uint128 0
+
+let find_by_id = @list_nth Auction
+
+let one_msg = 
+  fun (msg: Message) => 
+  let nil_msg = Nil {Message} in
+  Cons {Message} msg nil_msg
+
+let accepted_code = Int32 0
+let bid_is_zero = Int32 1
+let auction_finalized = Int32 2
+let bid_not_highest  = Int32 3
+let not_owner_of_auction  = Int32 4
+let auction_not_found = Int32 5
+let no_bid_found  = Int32 5
+let auction_not_finalized = Int32 6
+  
+contract Auction()
+
+field auctionCount: Uint32 = Uint32 0
+field auctionsMap : Map Uint32 Auction = Emp Uint32 Auction
+field auctionBids: Map Uint32 (Map ByStr20 Uint128) = Emp Uint32 (Map ByStr20 Uint128)
+
+transition createAuction(tokenAddress: ByStr20, tokenId:Uint32, startPrice:Uint128, duration:Uint64, startTime:Uint64)
+  id <- auctionCount;
+  noBidder = 0x0000000000000000000000000000000000000000;
+  auctionState = Running runningState;
+  newAuction = Auction id tokenAddress tokenId startPrice duration startTime _sender zero128 noBidder auctionState ;
+  
+  auctionsMap[id] := newAuction;
+  (* Create empty map entry in auctionBids for this auction*)
+  (* TODO: No need to create empty map? *)
+  (*emptyMap = Emp ByStr20 Uint128;
+  auctionBids[id] := emptyMap;*)
+  
+  one = Uint32 1;
+  incremented = builtin add id one;
+  auctionCount := incremented;
+  
+  e = {_eventname: "newAuction"; id:id; tokenAddress:tokenAddress; tokenId:tokenId; startPrice:startPrice; duration:duration; startTime:startTime; owner:_sender; code:accepted_code};
+  event e
+  
+end
+
+transition placeBid(auctionId:Uint32, bidAmount:Uint128)
+  (*Check bidAmount is greater than zero*)
+  greaterThanZero = builtin lt bidAmount zero128;
+  match greaterThanZero with
+    |False =>
+    |True =>
+      e = { _exception : "Bid amount must be greater than zero"; code: bid_is_zero };
+      throw e
+  end;
+
+  auctionOption <- auctionsMap[auctionId];
+
+  match auctionOption with
+    | Some auction =>
+        match auction with
+          |Auction i ta ti sp d stime o hb hber st =>
+            
+            (*check auction state is running*)
+            match st with
+              |Running runningState =>
+              |Finalized finalizedState =>
+                e = { _exception : "Auction has finished"; code: auction_finalized };
+                throw e
+            end;
+            
+            senderOldBid <- auctionBids[i][_sender];
+            match senderOldBid with
+              |Some oldBid =>
+                currentBid = builtin add oldBid bidAmount;
+                (*check current bid is greater than highest price*)
+                greaterThanHighestPrice = builtin lt hb currentBid;
+                match greaterThanHighestPrice with
+                  |True =>
+                    auctionBids[i][_sender] := currentBid;
+                    hb = currentBid;
+                    hber = _sender;
+                    
+                    newAuction = Auction i ta ti sp d stime o hb hber st;
+                    auctionsMap[i] := newAuction;
+                    
+                    e = {_eventname: "newBid"; id:i; bidder:_sender; amount:currentBid; code:accepted_code};
+                    event e;
+                    accept
+                  |False =>
+                    e = { _exception : "Bid amount is less than the highest bid"; code: bid_not_highest };
+                    throw e
+                end
+              |None =>
+                currentBid = bidAmount;
+                (*check current bid is greater than highest price*)
+                greaterThanHighestPrice = builtin lt hb currentBid;
+                match greaterThanHighestPrice with
+                  |True =>
+                    auctionBids[i][_sender] := currentBid;
+                    hb = currentBid;
+                    hber = _sender;
+                    
+                    newAuction = Auction i ta ti sp d stime o hb hber st;
+                    auctionsMap[i] := newAuction;
+                    
+                    e = {_eventname: "newBid"; id:i; bidder:_sender; amount:currentBid; code:accepted_code};
+                    event e;
+                    accept
+                  |False =>
+                    e = { _exception : "Bid amount is less than the highest bid"; code: bid_not_highest };
+                    throw e
+                end
+            end
+            
+        end
+    | None =>
+  end
+end
+
+
+(*procedure returnLosersMoney(auctionId:Uint32)
+  
+  allBids <- auctionBids;
+  bidMap = builtin get allBids auctionId;
+  match bidMap with
+    |Some map =>
+      bidList = builtin to_list map
+      
+      
+    |None =>
+  end
+end*)
+
+transition finalizeAuction(auctionId:Uint32)
+  auctionOption <- auctionsMap[auctionId];
+
+  match auctionOption with
+    | Some auction =>
+        match auction with
+          |Auction i ta ti sp d st owner highestBid highestBidder state =>
+            
+            (*only owner can finalize auction*)
+            is_owner = builtin eq owner _sender;
+            match is_owner with
+              |False =>
+                e = { _exception : "Only the auction owner can finalize it"; code: not_owner_of_auction };
+                throw e
+              |True =>
+                msg = { _tag: "";
+                  _recipient: owner;
+                  _amount: highestBid};
+                msgs = one_msg msg;
+                send msgs;
+                
+                (* highest bidder gets no money *)
+                auctionBids[auctionId][highestBidder] := zero128;
+                
+                (* everyone else gets their money returned *)
+                (*returnLosersMoney auctionId;*)
+                
+                state = Finalized finalizedState;
+                newAuction = Auction i ta ti sp d st owner highestBid highestBidder state;
+                auctionsMap[i] := newAuction;
+                
+                e = {_eventname: "auctionFinalized"; id:auctionId; code:accepted_code};
+                event e
+                end
+        end
+    | None =>
+      e = { _exception : "Auction with specified id does not exist"; code: auction_not_found };
+      throw e
+  end
+end
+
+transition claimback(auctionId:Uint32)
+
+  (*check that auction is finalized*)
+  auctionOption <- auctionsMap[auctionId];
+  match auctionOption with
+    | Some auction =>
+        match auction with
+          |Auction i ta ti sp d st owner highestBid highestBidder state =>
+            
+            match state with
+              |Finalized finalizedState =>
+              |Running runningState =>
+                e = { _exception : "Claimback can only be performed after auction finishes"; code: auction_not_finalized };
+                throw e
+            end
+        end
+  | None =>
+      e = { _exception : "Auction with specified id does not exist"; code: auction_not_found };
+      throw e
+  end;
+  
+  bidAmount <- auctionBids[auctionId][_sender];
+    
+  match bidAmount with
+    |Some amount =>
+      msg = { _tag: "";
+          _recipient: _sender;
+          _amount: amount};
+            
+      msgs = one_msg msg;
+      send msgs;
+      e = {_eventname: "claimback"; id:auctionId; sender:_sender; amount:amount; code:accepted_code};
+      event e
+    |None =>
+      e = { _exception : "No bid found for this sender in this auction"; code: no_bid_found };
+      throw e
+  end
+end
+
+
