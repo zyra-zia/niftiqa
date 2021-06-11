@@ -127,28 +127,28 @@ export default class CreateAuction extends React.Component {
               <div className="row g-3">
                 <div className="col-12">
                   <label htmlFor="tokenAddress" className="form-label">Token Address</label>
-                  <input type="text" className="form-control" id="tokenAddress" name="tokenAddress" placeholder="NFT Token Contract Address" value="zil1ecfelp3w3gtlhv3wdrau8n8wvdpkazvx42n3kl" required onChange={this.handleChange}/>
+                  <input type="text" className="form-control" id="tokenAddress" name="tokenAddress" placeholder="NFT Token Contract Address" value="" required onChange={this.handleChange}/>
                   <div className="invalid-feedback">
                     Token address is required.
                   </div>
                 </div>
                 <div className="col-12">
                   <label htmlFor="tokenId" className="form-label">Token Id</label>
-                  <input type="text" className="form-control" id="tokenId" name="tokenId" placeholder="NFT Token ID" value="1" required onChange={this.handleChange}/>
+                  <input type="text" className="form-control" id="tokenId" name="tokenId" placeholder="NFT Token ID" value="" required onChange={this.handleChange}/>
                   <div className="invalid-feedback">
                     Token ID is required.
                   </div>
                 </div>
                 <div className="col-12">
                   <label htmlFor="startPrice" className="form-label">Start Price (ZIL)</label>
-                  <input type="text" className="form-control" id="startPrice" name="startPrice" placeholder="Auction Starting Price" value="5" required onChange={this.handleChange}/>
+                  <input type="text" className="form-control" id="startPrice" name="startPrice" placeholder="Auction Starting Price" value="" required onChange={this.handleChange}/>
                   <div className="invalid-feedback">
                     Start Price is required.
                   </div>
                 </div>
                 <div className="col-12">
                   <label htmlFor="duration" className="form-label">Duration</label>
-                  <input type="text" className="form-control" id="duration" name="duration" placeholder="Duration in hours" value="10" required onChange={this.handleChange}/>
+                  <input type="text" className="form-control" id="duration" name="duration" placeholder="Duration in hours" value="" required onChange={this.handleChange}/>
                   <div className="invalid-feedback">
                     Duration is required.
                   </div>

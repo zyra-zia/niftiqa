@@ -1,6 +1,6 @@
 const {bytes, units} = require('@zilliqa-js/util');
 
-export const AUCTION_CONTRACT_ADDRESS= "0x58cbdceb49f9dc10b615f7c5c491c5f77b46da39";
+export const AUCTION_CONTRACT_ADDRESS= "0xd7126610749b24fd5449d1b45b5fe357746ba3f7";
 export const CHAIN_ID = 333;
 export const MSG_VERSION = 1;
 export const VERSION = bytes.pack(CHAIN_ID, MSG_VERSION);   

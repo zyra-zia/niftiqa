@@ -9,7 +9,7 @@ type State =
   |Finalized of String
 
 type Auction =
-  | Auction of Uint32 ByStr20 Uint32 Uint128 Uint64 Uint64 ByStr20 Uint128 ByStr20 State
+  | Auction of Uint32 ByStr20 Uint256 Uint128 Uint64 Uint64 ByStr20 Uint128 ByStr20 State
 
 let runningState = "Running"
 let finalizedState = "Finalized"
@@ -38,7 +38,7 @@ field auctionCount: Uint32 = Uint32 0
 field auctionsMap : Map Uint32 Auction = Emp Uint32 Auction
 field auctionBids: Map Uint32 (Map ByStr20 Uint128) = Emp Uint32 (Map ByStr20 Uint128)
 
-transition createAuction(tokenAddress: ByStr20, tokenId:Uint32, startPrice:Uint128, duration:Uint64, startTime:Uint64)
+transition createAuction(tokenAddress: ByStr20, tokenId:Uint256, startPrice:Uint128, duration:Uint64, startTime:Uint64)
   id <- auctionCount;
   noBidder = 0x0000000000000000000000000000000000000000;
   auctionState = Running runningState;
@@ -177,6 +177,11 @@ transition finalizeAuction(auctionId:Uint32)
                 state = Finalized finalizedState;
                 newAuction = Auction i ta ti sp d st owner highestBid highestBidder state;
                 auctionsMap[i] := newAuction;
+                
+                (*transfer nft to highestBidder*)
+                msg = { _tag : "Transfer"; _recipient : ta; _amount : Uint128 0; to:highestBidder; token_id : ti };
+                msgs = one_msg msg;
+                send msgs;
                 
                 e = {_eventname: "auctionFinalized"; id:auctionId; code:accepted_code};
                 event e
