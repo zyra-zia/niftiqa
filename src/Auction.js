@@ -34,7 +34,15 @@ export default class AuctionList extends React.Component {
         });
     }
 
-    async placeBid(){console.log(this.state.bid + " is the bid");
+    async placeBid(){console.log(this.props.highestBid);
+        if(this.state.bid < Number(this.props.startPrice)){
+            alert("Minimum bid amount is " + this.props.startPrice);
+            return;
+        }
+        if(Number(this.props.highestBid) > 0 && this.state.bid < Number(this.props.highestBid)){
+            alert("Please place a bid greater than " + this.props.highestBid);
+            return;
+        }
         try {
             const contract = this.props.zilliqa.contracts.at(AUCTION_CONTRACT_ADDRESS);
             await contract.call(
@@ -144,18 +152,15 @@ export default class AuctionList extends React.Component {
   
   
     render(){
-        let duration = moment.duration(this.props.duration);
-        let start = moment(parseInt(this.props.startTime));
-        let endingTime = start.add(duration);
-        let now = moment();
-        
+        let now = Date.now();
+        let finishTime = parseInt(this.props.startTime) + parseInt(this.props.duration);
         let timeString = "";
-        if(endingTime.milliseconds() < now.milliseconds()){
+        if(finishTime < now){
             //auction has expired
             timeString = "Auction Finished.";
         }
         else{
-            timeString = "Ends: " + endingTime.fromNow();
+            timeString = "Ends: " + moment(finishTime).fromNow();
         }
 
         let highestBidString = "";
@@ -181,7 +186,7 @@ export default class AuctionList extends React.Component {
                     <li className="list-group-item">Starting Price: {this.props.startPrice} ZIL</li>
                     <li className="list-group-item">{highestBidString}</li>
 
-                    {this.props.auctionState === "Running"?
+                    {this.props.auctionState === "Running" && finishTime > now ?
                     <li className="list-group-item">
                         <input type="number" onChange={this.handleBidChange}/>
                         <button className="btn btn-primary" onClick={this.placeBid}>Bid</button>
