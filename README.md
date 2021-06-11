@@ -2,6 +2,8 @@
 
 Demo webpage [Niftiqa](https://niftiqa.web.app).
 
+(PLEASE ENSURE YOU ARE ON TESTNET)
+
 An NFT auction website for Zilliqa NFTs. 
 Needs ZilPay to work. 
 Only the auction owner can finalize an auction. When an auction is finalized, the NFT is transferred to the highest bidder.
