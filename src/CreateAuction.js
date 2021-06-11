@@ -10,10 +10,10 @@ export default class CreateAuction extends React.Component {
     constructor(props) {
       super(props);
       this.state = {
-        tokenAddress: "zil1ecfelp3w3gtlhv3wdrau8n8wvdpkazvx42n3kl",
+        tokenAddress: "",
         tokenId: 1,
-        startPrice: 5,
-        duration: 10
+        startPrice: 1,
+        duration: 0
       };
   
       this.handleChange = this.handleChange.bind(this);
